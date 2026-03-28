@@ -3,3 +3,4 @@
 .workout_api.__pycache__
 alembic.ini
 .alembic.ini
+settings.py
