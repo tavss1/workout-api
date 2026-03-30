@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from fastapi import APIRouter, Body, status, HTTPException
+from fastapi_pagination import Page, paginate
 from pydantic import UUID4
 from sqlalchemy.future import select
 
@@ -34,15 +35,15 @@ async def post(
       path="/", 
       summary="Lista todos os centros de treinamento", 
       status_code=status.HTTP_200_OK, 
-      response_model=list[CentroTreinamentoOut]
+      response_model=Page[CentroTreinamentoOut]
 )
 
 async def query(
    db_session: DatabaseDependency
-) -> list[CentroTreinamentoOut]:
+) -> Page[CentroTreinamentoOut]:
    centros_treinamento: list[CentroTreinamentoOut] = (await db_session.execute(select(CentroTreinamentoModel))).scalars().all()
    
-   return centros_treinamento
+   return paginate([CentroTreinamentoOut.model_validate(ct) for ct in centros_treinamento])
 
 
 @router.get(

@@ -1,12 +1,13 @@
 from datetime import datetime
 from uuid import uuid4
 
-from fastapi import APIRouter, Body, HTTPException, status
+from fastapi import APIRouter, Body, HTTPException, Query, status
+from fastapi_pagination import Page, paginate
 from pydantic import UUID4
 from sqlalchemy.future import select
 
 from workout_api.atleta.models import AtletaModel
-from workout_api.atleta.schemas import AtletaIn, AtletaOut, Atleta, AtletaUpdate
+from workout_api.atleta.schemas import AtletaOut, Atleta, AtletaUpdate
 from workout_api.categoria.models import CategoriaModel
 from workout_api.centro_treinamento.models import CentroTreinamentoModel
 from workout_api.contrib.repository.dependencies import DatabaseDependency
@@ -49,15 +50,36 @@ async def post(
       path="/", 
       summary="Lista todos os atletas", 
       status_code=status.HTTP_200_OK, 
-      response_model=list[AtletaOut]
+   response_model=Page[AtletaOut]
 )
 
 async def query(
    db_session: DatabaseDependency
-) -> list[AtletaOut]:
+) -> Page[AtletaOut]:
    atletas: list[AtletaOut] = (await db_session.execute(select(AtletaModel))).scalars().all()
    
-   return [AtletaOut.model_validate(atleta) for atleta in atletas] 
+   return paginate([AtletaOut.model_validate(atleta) for atleta in atletas]) 
+
+# Lista atleta por nome e Cpf
+@router.get(
+   path="/buscar", 
+      summary="Lista atleta por nome e CPF", 
+      status_code=status.HTTP_200_OK, 
+      response_model=AtletaOut
+)
+
+async def query(
+   db_session: DatabaseDependency,
+   nome: str = Query(description="Filtrar atletas pelo nome"),
+   cpf: str | None = Query(None, description="Filtrar atletas pelo CPF")
+) -> AtletaOut:
+   atleta: AtletaOut = (await db_session.execute(
+      select(AtletaModel).filter_by(nome=nome, cpf=cpf))).scalars().first()
+   
+   if not atleta:
+      raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Atleta não encontrado pelo nome: {nome} e CPF: {cpf}")
+   
+   return atleta
 
 @router.get(
       path="/{id}", 
