@@ -1,6 +1,4 @@
 from datetime import datetime
-
-from pydantic import PositiveFloat
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from workout_api.contrib.models import BaseModel
